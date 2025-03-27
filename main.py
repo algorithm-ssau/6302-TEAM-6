@@ -36,3 +36,11 @@ MESSAGE_LIMIT = 4096
 # Определяем устройство для whisper: GPU если доступно, иначе CPU
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model = whisper.load_model("medium", device=device)
+
+def split_message(text, limit=MESSAGE_LIMIT):
+    return [text[i:i + limit] for i in range(0, len(text), limit)]
+
+def escape_markdown_v2(text: str) -> str:
+    """Экранирует специальные символы для MarkdownV2."""
+    escape_chars = r'_[]()~`>#+-=|{}.!'
+    return re.sub(r'([%s])' % re.escape(escape_chars), r'\\\1', text)
