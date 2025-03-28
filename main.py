@@ -116,3 +116,26 @@ class APIClient:
             return reasoning, content
 
         return "Server is busy right now", ""
+
+class TelegramBot:
+    """
+    Telegram-бот для транскрипции аудио и выдачи структурированного содержания,
+    с поддержкой уточняющих вопросов в режиме диалога.
+    """
+    def __init__(self, token: str):
+        self.token = token
+        self.api_client = APIClient()
+        self.app = Application.builder().token(self.token).build()
+
+        # pending_audio хранит путь к wav-файлу для каждого чата (для транскрипции после уточнения контекста)
+        self.pending_audio = {}
+        # awaiting_context: если бот ожидает ввод уточняющего контекста для аудио.
+        # Если значение True – ждем текст от пользователя.
+        self.awaiting_context = {}
+
+        # Состояния для выбора модели и режима диалога
+        self.selected_model = {}  # {chat_id: model_name}
+        self.use_context = {}     # {chat_id: bool}
+        self.chat_history = {}    # {chat_id: список сообщений}
+
+        self.setup_handlers()
