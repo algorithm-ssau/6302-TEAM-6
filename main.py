@@ -53,3 +53,66 @@ async def transcribe_audio(file_path):
     except Exception as e:
         text = f"Ошибка при транскрипции: {e}"
     return text
+
+class APIClient:
+    """
+    Класс для работы с API нейросети.
+    """
+    API_URL = "https://openrouter.ai/api/v1/chat/completions"
+    DEFAULT_MODEL = "deepseek/deepseek-chat-v3-0324:free"
+    HEADERS = {
+        "Authorization": OPENROUTER_API_KEY,
+        "Content-Type": "application/json"
+    }
+
+    def summarize_text(self, transcript: str, system_prompt: str, model: str = None, history: list = None):
+        if model is None:
+            model = self.DEFAULT_MODEL
+
+        messages = [{"role": "system", "content": system_prompt}]
+        if history:
+            messages.extend(history)
+        messages.append({"role": "user", "content": transcript})
+        payload = {
+            "model": model,
+            "messages": messages
+        }
+        headers = self.HEADERS.copy()
+
+        attempts = 0
+        while attempts < API_RETRY_ATTEMPTS:
+            attempts += 1
+            logging.info("summarize_text(): обращение к API модели %s | попытка %d/%d", model, attempts, API_RETRY_ATTEMPTS)
+            try:
+                response = requests.post(
+                    url=self.API_URL,
+                    headers=headers,
+                    data=json.dumps(payload)
+                )
+            except Exception as e:
+                logging.exception("summarize_text(): Exception при обращении к API: %s", str(e))
+                continue
+
+            if response.status_code != 200:
+                try:
+                    data = response.json()
+                    logging.error("summarize_text(): API вернул ошибку: %s", data.get("error"))
+                except Exception:
+                    logging.error("summarize_text(): API вернул статус код %s", response.status_code)
+                continue
+
+            data = response.json()
+            if "error" in data:
+                logging.error("summarize_text(): API вернул ошибку: %s", data["error"])
+                continue
+
+            message = data["choices"][0]["message"]
+            content = message.get("content", "")
+            if not content:
+                logging.info("summarize_text(): пустой content, повтор запроса")
+                continue
+
+            reasoning = message.get("reasoning", "")
+            return reasoning, content
+
+        return "Server is busy right now", ""
