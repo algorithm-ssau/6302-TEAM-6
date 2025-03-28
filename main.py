@@ -44,3 +44,12 @@ def escape_markdown_v2(text: str) -> str:
     """Экранирует специальные символы для MarkdownV2."""
     escape_chars = r'_[]()~`>#+-=|{}.!'
     return re.sub(r'([%s])' % re.escape(escape_chars), r'\\\1', text)
+
+async def transcribe_audio(file_path):
+    """Транскрибирует аудиофайл с использованием модели Whisper."""
+    try:
+        result = model.transcribe(file_path, language="ru")
+        text = result.get("text", "").strip()
+    except Exception as e:
+        text = f"Ошибка при транскрипции: {e}"
+    return text
