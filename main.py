@@ -166,3 +166,68 @@ class TelegramBot:
             "После загрузки аудио можно ввести уточняющий контекст, чтобы достичь лучшего результата.",
             reply_markup=reply_markup
         )
+
+    async def handle_voice_audio(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработка голосовых сообщений и аудиофайлов."""
+        chat_id = update.effective_chat.id
+
+        # Определяем тип файла
+        file_id = None
+        file_type = None
+        if update.message.voice:
+            file_id = update.message.voice.file_id
+            file_type = "voice"
+        elif update.message.audio:
+            file_id = update.message.audio.file_id
+            file_type = "audio"
+        else:
+            await update.message.reply_text("Неподдерживаемый формат файла.")
+            return
+
+        # Скачиваем файл во временное хранилище
+        try:
+            await context.bot.send_message(chat_id, "Скачиваю файл...")
+            new_file = await context.bot.get_file(file_id)
+        except Exception as e:
+            if "File is too big" in str(e):
+                await update.message.reply_text(
+                    "Telegram накладывает ограничение на размер файла. Пожалуйста, отправьте файл до 20 МБ."
+                )
+                return
+            else:
+                await update.message.reply_text("Ошибка при получении файла.")
+                return
+
+        suffix = ".ogg" if file_type == "voice" else ".mp3"
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tf:
+            file_path = tf.name
+            await new_file.download_to_drive(file_path)
+
+        # Конвертируем в wav
+        try:
+            if file_type == "voice":
+                audio = AudioSegment.from_ogg(file_path)
+            else:
+                audio = AudioSegment.from_file(file_path)
+        except Exception as e:
+            await update.message.reply_text(f"Ошибка конвертации файла: {e}")
+            os.remove(file_path)
+            return
+
+        wav_path = file_path + ".wav"
+        audio.export(wav_path, format="wav")
+        os.remove(file_path)
+
+        # Сохраняем путь к аудиофайлу для последующей транскрипции
+        self.pending_audio[chat_id] = wav_path
+
+        # Спрашиваем, нужен ли уточняющий контекст
+        buttons = [
+            [InlineKeyboardButton("Уточнить", callback_data="ask_context_yes"),
+             InlineKeyboardButton("Не нужно", callback_data="ask_context_no")]
+        ]
+        reply_markup = InlineKeyboardMarkup(buttons)
+        await update.message.reply_text(
+            "Нужно ли добавить уточняющий контекст для аудио?",
+            reply_markup=reply_markup
+        )
