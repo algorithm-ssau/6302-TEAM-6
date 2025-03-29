@@ -139,3 +139,30 @@ class TelegramBot:
         self.chat_history = {}    # {chat_id: список сообщений}
 
         self.setup_handlers()
+
+    def get_main_keyboard(self, chat_id):
+        """
+        Формирует клавиатуру для выбора модели и режима диалога.
+        """
+        context_button = "Отключить контекст" if self.use_context.get(chat_id, False) else "Режим диалога"
+        keyboard = [
+            [KeyboardButton("Выбрать модель")],
+            [KeyboardButton(context_button)],
+            [KeyboardButton("/start")]
+        ]
+        return keyboard
+
+    async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        chat_id = update.effective_chat.id
+        if chat_id not in self.selected_model:
+            self.selected_model[chat_id] = APIClient.DEFAULT_MODEL
+        if chat_id not in self.use_context:
+            self.use_context[chat_id] = False
+        if self.use_context.get(chat_id) and chat_id not in self.chat_history:
+            self.chat_history[chat_id] = []
+        reply_markup = ReplyKeyboardMarkup(self.get_main_keyboard(chat_id), resize_keyboard=True, one_time_keyboard=False)
+        await update.message.reply_text(
+            "Привет! Отправь голосовое сообщение или аудиофайл, и я переведу его в структурированный текст.\n"
+            "После загрузки аудио можно ввести уточняющий контекст, чтобы достичь лучшего результата.",
+            reply_markup=reply_markup
+        )
