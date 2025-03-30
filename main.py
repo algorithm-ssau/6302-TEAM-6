@@ -329,3 +329,21 @@ class TelegramBot:
         ]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
         await update.message.reply_text("Выберите модель:", reply_markup=reply_markup)
+
+    async def model_selection_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработка выбора модели из меню."""
+        chat_id = update.effective_chat.id
+        user_text = update.message.text.strip()
+        if user_text == "DeepSeek R1":
+            self.selected_model[chat_id] = "deepseek/deepseek-r1:free"
+        elif user_text == "Gemini Pro 2.0":
+            self.selected_model[chat_id] = "google/gemini-2.0-pro-exp-02-05:free"
+        elif user_text == "Qwen: QwQ 32B":
+            self.selected_model[chat_id] = "qwen/qwq-32b:free"
+        elif user_text == "⚡ DeepSeek V3 685B":
+            self.selected_model[chat_id] = "deepseek/deepseek-chat-v3-0324:free"
+        elif user_text == "Отмена":
+            await update.message.reply_text("Выбор модели отменён.")
+            return
+        reply_markup = ReplyKeyboardMarkup(self.get_main_keyboard(chat_id), resize_keyboard=True, one_time_keyboard=False)
+        await update.message.reply_text(f"Выбрана модель {self.selected_model[chat_id].split('/')[0]}", reply_markup=reply_markup)
