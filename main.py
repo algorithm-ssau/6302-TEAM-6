@@ -299,3 +299,23 @@ class TelegramBot:
                 self.chat_history[chat_id].append({"role": "assistant", "content": content})
             for part in split_message(content):
                 await context.bot.send_message(chat_id, escape_markdown_v2(part), parse_mode=ParseMode.MARKDOWN_V2)
+
+    async def process_clarification(self, chat_id, question: str, context: ContextTypes.DEFAULT_TYPE):
+        """Обрабатывает уточняющие вопросы в режиме диалога, используя историю переписки."""
+        history = self.chat_history.get(chat_id, [])
+        clarification_prompt = "Пользователь уточняет: " + question
+        selected_model = self.selected_model.get(chat_id, APIClient.DEFAULT_MODEL)
+        await context.bot.send_message(chat_id, f"Отправляю уточняющий запрос в модель...")
+        reasoning, content = self.api_client.summarize_text(
+            clarification_prompt,
+            system_prompt="Учти историю диалога и ответь на уточняющий вопрос.",
+            model=selected_model,
+            history=history
+        )
+        if not content or content == "Server is busy right now":
+            await context.bot.send_message(chat_id, "К сожалению, сервер языковой модели плохо себя ведёт. Попробуйте позже.")
+        else:
+            self.chat_history[chat_id].append({"role": "user", "content": clarification_prompt})
+            self.chat_history[chat_id].append({"role": "assistant", "content": content})
+            for part in split_message(content):
+                await context.bot.send_message(chat_id, escape_markdown_v2(part), parse_mode=ParseMode.MARKDOWN_V2)
