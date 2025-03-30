@@ -319,3 +319,13 @@ class TelegramBot:
             self.chat_history[chat_id].append({"role": "assistant", "content": content})
             for part in split_message(content):
                 await context.bot.send_message(chat_id, escape_markdown_v2(part), parse_mode=ParseMode.MARKDOWN_V2)
+
+    async def choose_model(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработка запроса выбора модели."""
+        keyboard = [
+            [KeyboardButton("⚡ DeepSeek V3 685B"), KeyboardButton("DeepSeek R1")],
+            [KeyboardButton("Gemini Pro 2.0"), KeyboardButton("Qwen: QwQ 32B")],
+            [KeyboardButton("Отмена")]
+        ]
+        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+        await update.message.reply_text("Выберите модель:", reply_markup=reply_markup)
