@@ -299,3 +299,51 @@ class TelegramBot:
                 self.chat_history[chat_id].append({"role": "assistant", "content": content})
             for part in split_message(content):
                 await context.bot.send_message(chat_id, escape_markdown_v2(part), parse_mode=ParseMode.MARKDOWN_V2)
+
+    async def process_clarification(self, chat_id, question: str, context: ContextTypes.DEFAULT_TYPE):
+        """Обрабатывает уточняющие вопросы в режиме диалога, используя историю переписки."""
+        history = self.chat_history.get(chat_id, [])
+        clarification_prompt = "Пользователь уточняет: " + question
+        selected_model = self.selected_model.get(chat_id, APIClient.DEFAULT_MODEL)
+        await context.bot.send_message(chat_id, f"Отправляю уточняющий запрос в модель...")
+        reasoning, content = self.api_client.summarize_text(
+            clarification_prompt,
+            system_prompt="Учти историю диалога и ответь на уточняющий вопрос.",
+            model=selected_model,
+            history=history
+        )
+        if not content or content == "Server is busy right now":
+            await context.bot.send_message(chat_id, "К сожалению, сервер языковой модели плохо себя ведёт. Попробуйте позже.")
+        else:
+            self.chat_history[chat_id].append({"role": "user", "content": clarification_prompt})
+            self.chat_history[chat_id].append({"role": "assistant", "content": content})
+            for part in split_message(content):
+                await context.bot.send_message(chat_id, escape_markdown_v2(part), parse_mode=ParseMode.MARKDOWN_V2)
+
+    async def choose_model(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработка запроса выбора модели."""
+        keyboard = [
+            [KeyboardButton("⚡ DeepSeek V3 685B"), KeyboardButton("DeepSeek R1")],
+            [KeyboardButton("Gemini Pro 2.0"), KeyboardButton("Qwen: QwQ 32B")],
+            [KeyboardButton("Отмена")]
+        ]
+        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+        await update.message.reply_text("Выберите модель:", reply_markup=reply_markup)
+
+    async def model_selection_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Обработка выбора модели из меню."""
+        chat_id = update.effective_chat.id
+        user_text = update.message.text.strip()
+        if user_text == "DeepSeek R1":
+            self.selected_model[chat_id] = "deepseek/deepseek-r1:free"
+        elif user_text == "Gemini Pro 2.0":
+            self.selected_model[chat_id] = "google/gemini-2.0-pro-exp-02-05:free"
+        elif user_text == "Qwen: QwQ 32B":
+            self.selected_model[chat_id] = "qwen/qwq-32b:free"
+        elif user_text == "⚡ DeepSeek V3 685B":
+            self.selected_model[chat_id] = "deepseek/deepseek-chat-v3-0324:free"
+        elif user_text == "Отмена":
+            await update.message.reply_text("Выбор модели отменён.")
+            return
+        reply_markup = ReplyKeyboardMarkup(self.get_main_keyboard(chat_id), resize_keyboard=True, one_time_keyboard=False)
+        await update.message.reply_text(f"Выбрана модель {self.selected_model[chat_id].split('/')[0]}", reply_markup=reply_markup)
