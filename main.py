@@ -378,3 +378,13 @@ class TelegramBot:
 
     def run(self):
         self.app.run_polling()
+
+def main():
+    logging.basicConfig(
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
+    )
+    bot = TelegramBot(TELEGRAM_TOKEN)
+    bot.run()
+
+if __name__ == '__main__':
+    main()
