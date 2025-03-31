@@ -347,3 +347,19 @@ class TelegramBot:
             return
         reply_markup = ReplyKeyboardMarkup(self.get_main_keyboard(chat_id), resize_keyboard=True, one_time_keyboard=False)
         await update.message.reply_text(f"Выбрана модель {self.selected_model[chat_id].split('/')[0]}", reply_markup=reply_markup)
+
+    async def set_mode(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Переключение режима диалога."""
+        chat_id = update.effective_chat.id
+        current = self.use_context.get(chat_id, False)
+        self.use_context[chat_id] = not current
+        if not self.use_context[chat_id]:
+            self.chat_history.pop(chat_id, None)
+            response = "Режим диалога отключён. История очищена."
+        else:
+            self.chat_history[chat_id] = []
+            response = "Режим диалога включён. Теперь вы можете задавать уточняющие вопросы."
+        reply_markup = ReplyKeyboardMarkup(self.get_main_keyboard(chat_id), resize_keyboard=True,
+                                           one_time_keyboard=False)
+        await update.message.reply_text(response, reply_markup=reply_markup)
+
