@@ -363,3 +363,18 @@ class TelegramBot:
                                            one_time_keyboard=False)
         await update.message.reply_text(response, reply_markup=reply_markup)
 
+    def setup_handlers(self):
+        self.app.add_handler(CommandHandler("start", self.start))
+        self.app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, self.handle_voice_audio))
+        self.app.add_handler(CallbackQueryHandler(self.context_button_handler))
+        # Обработчики для меню регистрируются первыми
+        self.app.add_handler(
+            MessageHandler(filters.Regex(r"^(DeepSeek R1|Gemini Pro 2\.0|Qwen: QwQ 32B|⚡️ DeepSeek V3 685B|Отмена)$"),
+                           self.model_selection_handler))
+        self.app.add_handler(MessageHandler(filters.Regex(r"^(Режим диалога|Отключить контекст)$"), self.set_mode))
+        self.app.add_handler(MessageHandler(filters.Regex(r"^Выбрать модель$"), self.choose_model))
+        # Общий текстовый обработчик – для уточнения контекста или вопросов в диалоговом режиме
+        self.app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.handle_text))
+
+    def run(self):
+        self.app.run_polling()
