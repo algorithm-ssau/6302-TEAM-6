@@ -347,3 +347,44 @@ class TelegramBot:
             return
         reply_markup = ReplyKeyboardMarkup(self.get_main_keyboard(chat_id), resize_keyboard=True, one_time_keyboard=False)
         await update.message.reply_text(f"Выбрана модель {self.selected_model[chat_id].split('/')[0]}", reply_markup=reply_markup)
+
+    async def set_mode(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Переключение режима диалога."""
+        chat_id = update.effective_chat.id
+        current = self.use_context.get(chat_id, False)
+        self.use_context[chat_id] = not current
+        if not self.use_context[chat_id]:
+            self.chat_history.pop(chat_id, None)
+            response = "Режим диалога отключён. История очищена."
+        else:
+            self.chat_history[chat_id] = []
+            response = "Режим диалога включён. Теперь вы можете задавать уточняющие вопросы."
+        reply_markup = ReplyKeyboardMarkup(self.get_main_keyboard(chat_id), resize_keyboard=True,
+                                           one_time_keyboard=False)
+        await update.message.reply_text(response, reply_markup=reply_markup)
+
+    def setup_handlers(self):
+        self.app.add_handler(CommandHandler("start", self.start))
+        self.app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, self.handle_voice_audio))
+        self.app.add_handler(CallbackQueryHandler(self.context_button_handler))
+        # Обработчики для меню регистрируются первыми
+        self.app.add_handler(
+            MessageHandler(filters.Regex(r"^(DeepSeek R1|Gemini Pro 2\.0|Qwen: QwQ 32B|⚡️ DeepSeek V3 685B|Отмена)$"),
+                           self.model_selection_handler))
+        self.app.add_handler(MessageHandler(filters.Regex(r"^(Режим диалога|Отключить контекст)$"), self.set_mode))
+        self.app.add_handler(MessageHandler(filters.Regex(r"^Выбрать модель$"), self.choose_model))
+        # Общий текстовый обработчик – для уточнения контекста или вопросов в диалоговом режиме
+        self.app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.handle_text))
+
+    def run(self):
+        self.app.run_polling()
+
+def main():
+    logging.basicConfig(
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
+    )
+    bot = TelegramBot(TELEGRAM_TOKEN)
+    bot.run()
+
+if __name__ == '__main__':
+    main()
