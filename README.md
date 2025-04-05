@@ -59,7 +59,7 @@ git clone https://github.com/algorithm-ssau/6302-TEAM-6.git
 Для запуска бота потребуется установить несколько библиотек.<br>
 Для этого запустите команду в терминале:
 ```bash
-pip install python-telegram-bot==20.7 python-dotenv requests assemblyai
+pip install -r requirements.txt
 ```
 
 ### 3. Получите токен бота
