@@ -262,8 +262,15 @@ class TelegramBot:
             await context.bot.send_message(chat_id, "Ошибка: аудиофайл не найден.")
             return
 
-        transcript = await transcribe_audio(file_path, context, chat_id)
-        os.remove(file_path)
+        try:
+            transcript = await transcribe_audio(file_path, context, chat_id)
+        except Exception as e:
+            await context.bot.send_message(chat_id, "Произошла ошибка при обработке аудиофайла. Попробуйте позже.")
+            return
+        finally:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
         if transcript is None:
             return
 
