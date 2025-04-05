@@ -318,7 +318,7 @@ class TelegramBot:
         """Обработка запроса выбора модели."""
         keyboard = [
             [KeyboardButton("⚡ DeepSeek V3 685B"), KeyboardButton("DeepSeek R1")],
-            [KeyboardButton("Gemini Pro 2.0"), KeyboardButton("Qwen: QwQ 32B")],
+            [KeyboardButton("Gemini 2.5 Pro"), KeyboardButton("Qwen: QwQ 32B")],
             [KeyboardButton("Отмена")]
         ]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
@@ -330,8 +330,8 @@ class TelegramBot:
         user_text = update.message.text.strip()
         if user_text == "DeepSeek R1":
             self.selected_model[chat_id] = "deepseek/deepseek-r1:free"
-        elif user_text == "Gemini Pro 2.0":
-            self.selected_model[chat_id] = "google/gemini-2.0-pro-exp-02-05:free"
+        elif user_text == "Gemini 2.5 Pro":
+            self.selected_model[chat_id] = "google/gemini-2.5-pro-exp-03-25:free"
         elif user_text == "Qwen: QwQ 32B":
             self.selected_model[chat_id] = "qwen/qwq-32b:free"
         elif user_text == "⚡ DeepSeek V3 685B":
@@ -363,7 +363,7 @@ class TelegramBot:
         self.app.add_handler(CallbackQueryHandler(self.context_button_handler))
         # Обработчики для меню регистрируются первыми
         self.app.add_handler(MessageHandler(
-            filters.Regex(r"^(DeepSeek R1|Gemini Pro 2\.0|Qwen: QwQ 32B|⚡ DeepSeek V3 685B|Отмена)$"),
+            filters.Regex(r"^(DeepSeek R1|Gemini 2\.5 Pro|Qwen: QwQ 32B|⚡ DeepSeek V3 685B|Отмена)$"),
             self.model_selection_handler))
         self.app.add_handler(MessageHandler(filters.Regex(r"^(Режим диалога|Отключить контекст)$"), self.set_mode))
         self.app.add_handler(MessageHandler(filters.Regex(r"^Выбрать модель$"), self.choose_model))
