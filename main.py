@@ -4,7 +4,7 @@ import json
 import logging
 import tempfile
 import requests
-from pydub import AudioSegment
+import assemblyai as aai
 from dotenv import load_dotenv
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
@@ -16,42 +16,43 @@ from telegram.ext import (
     ContextTypes,
     filters,
 )
-import torch
-import whisper
-
-# Настройка ffmpeg
-os.environ["PATH"] += os.pathsep + r"C:\ffmpeg\bin"
-AudioSegment.converter = r"C:\ffmpeg\bin\ffmpeg.exe"
-AudioSegment.ffprobe = r"C:\ffmpeg\bin\ffprobe.exe"
 
 # Загрузка переменных окружения
 load_dotenv()
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+ASSEMBLYAI_API_KEY = os.getenv("ASSEMBLYAI_API_KEY")
+aai.settings.api_key = ASSEMBLYAI_API_KEY
 
 # Константы
 API_RETRY_ATTEMPTS = 10
 MESSAGE_LIMIT = 4096
-
-# Определяем устройство для whisper: GPU если доступно, иначе CPU
-device = "cuda" if torch.cuda.is_available() else "cpu"
-model = whisper.load_model("medium", device=device)
 
 def split_message(text, limit=MESSAGE_LIMIT):
     return [text[i:i + limit] for i in range(0, len(text), limit)]
 
 def escape_markdown_v2(text: str) -> str:
     """Экранирует специальные символы для MarkdownV2."""
-    escape_chars = r'_[]()~`>#+-=|{}.!'
+    escape_chars = r'_[]()~>#+-=|{}.!'
     return re.sub(r'([%s])' % re.escape(escape_chars), r'\\\1', text)
 
-async def transcribe_audio(file_path):
-    """Транскрибирует аудиофайл с использованием модели Whisper."""
+async def transcribe_audio(file_path, context, chat_id):
+    """Транскрибирует аудиофайл с использованием AssemblyAI."""
     try:
-        result = model.transcribe(file_path, language="ru")
-        text = result.get("text", "").strip()
+        config = aai.TranscriptionConfig(language_code="ru")
+        transcript = aai.Transcriber(config=config).transcribe(file_path)
+        if transcript.status == "error":
+            await context.bot.send_message(
+                chat_id,
+                "К сожалению, ключ API для транскрипции аудио истёк. "
+                "Не переживайте, мы уже занимаемся его заменой. Попробуйте сделать запрос позже."
+            )
+            return None
+        text = transcript.text.strip()
     except Exception as e:
-        text = f"Ошибка при транскрипции: {e}"
+        await context.bot.send_message(chat_id, f"К сожалению, произошла неизвестная ошибка при транскрипции аудио. "
+                                                f"Пожалуйста, попробуйте ещё раз.")
+        return None
     return text
 
 class APIClient:
@@ -127,7 +128,7 @@ class TelegramBot:
         self.api_client = APIClient()
         self.app = Application.builder().token(self.token).build()
 
-        # pending_audio хранит путь к wav-файлу для каждого чата (для транскрипции после уточнения контекста)
+        # pending_audio хранит путь к аудиофайлу для каждого чата
         self.pending_audio = {}
         # awaiting_context: если бот ожидает ввод уточняющего контекста для аудио.
         # Если значение True – ждем текст от пользователя.
@@ -160,7 +161,10 @@ class TelegramBot:
             self.use_context[chat_id] = False
         if self.use_context.get(chat_id) and chat_id not in self.chat_history:
             self.chat_history[chat_id] = []
-        reply_markup = ReplyKeyboardMarkup(self.get_main_keyboard(chat_id), resize_keyboard=True, one_time_keyboard=False)
+        reply_markup = ReplyKeyboardMarkup(
+            self.get_main_keyboard(chat_id),
+            resize_keyboard=True, one_time_keyboard=False
+        )
         await update.message.reply_text(
             "Привет! Отправь голосовое сообщение или аудиофайл, и я переведу его в структурированный текст.\n"
             "После загрузки аудио можно ввести уточняющий контекст, чтобы достичь лучшего результата.",
@@ -181,7 +185,7 @@ class TelegramBot:
             file_id = update.message.audio.file_id
             file_type = "audio"
         else:
-            await update.message.reply_text("Неподдерживаемый формат файла.")
+            await update.message.reply_text("Неподдерживаемый формат файла. Я принимаю голосовые сообщения, ogg и mp3")
             return
 
         # Скачиваем файл во временное хранилище
@@ -195,7 +199,7 @@ class TelegramBot:
                 )
                 return
             else:
-                await update.message.reply_text("Ошибка при получении файла.")
+                await update.message.reply_text("Ошибка при получении файла. Пожалуйста, попробуйте ещё раз")
                 return
 
         suffix = ".ogg" if file_type == "voice" else ".mp3"
@@ -203,23 +207,8 @@ class TelegramBot:
             file_path = tf.name
             await new_file.download_to_drive(file_path)
 
-        # Конвертируем в wav
-        try:
-            if file_type == "voice":
-                audio = AudioSegment.from_ogg(file_path)
-            else:
-                audio = AudioSegment.from_file(file_path)
-        except Exception as e:
-            await update.message.reply_text(f"Ошибка конвертации файла: {e}")
-            os.remove(file_path)
-            return
-
-        wav_path = file_path + ".wav"
-        audio.export(wav_path, format="wav")
-        os.remove(file_path)
-
-        # Сохраняем путь к аудиофайлу для последующей транскрипции
-        self.pending_audio[chat_id] = wav_path
+        # Используем оригинальный аудиофайл без конвертации
+        self.pending_audio[chat_id] = file_path
 
         # Спрашиваем, нужен ли уточняющий контекст
         buttons = [
@@ -239,7 +228,9 @@ class TelegramBot:
         await query.answer()
         if query.data == "ask_context_yes":
             self.awaiting_context[chat_id] = True  # ждём ввода контекста
-            await query.edit_message_text("Пожалуйста, введите уточняющий контекст.\nНапример, \"Это требования заказчика к новому проекту о бронировании авиабилетов\".")
+            await query.edit_message_text("Пожалуйста, введите уточняющий контекст."
+                                          "\nНапример, "
+                                          "\"Это требования заказчика к новому проекту о бронировании авиабилетов\".")
         elif query.data == "ask_context_no":
             self.awaiting_context[chat_id] = False  # контекст не нужен
             await query.edit_message_text("Транскрибирую аудио...")
@@ -266,23 +257,26 @@ class TelegramBot:
 
     async def process_summarization(self, chat_id, additional_context, context: ContextTypes.DEFAULT_TYPE):
         """Проводит транскрипцию, формирует запрос и отправляет его в нейросеть."""
-        wav_path = self.pending_audio.pop(chat_id, None)
-        if not wav_path or not os.path.exists(wav_path):
+        file_path = self.pending_audio.pop(chat_id, None)
+        if not file_path or not os.path.exists(file_path):
             await context.bot.send_message(chat_id, "Ошибка: аудиофайл не найден.")
             return
 
-        transcript = await transcribe_audio(wav_path)
-        os.remove(wav_path)
+        transcript = await transcribe_audio(file_path, context, chat_id)
+        os.remove(file_path)
+        if transcript is None:
+            return
 
         selected_model = self.selected_model.get(chat_id, APIClient.DEFAULT_MODEL)
-        await context.bot.send_message(chat_id, f"Отправляю запрос в языковую модель...")
+        await context.bot.send_message(chat_id, "Отправляю запрос в языковую модель...")
 
         system_prompt = (
             "Ты — эксперт по структурированию информации. "
             "Твоя задача — внимательно проанализировать текст и выделить его суть, убрав лишние детали. "
-            "Текст был получен из аудио, поэтому некоторые слова могли исказиться, восстанавливай их из контекста (если возможно) для повышения качества анализа текста. "
-            "Не показывай пользователю какие слова ты восстановил или исправил. Используй их только для анализа текста. "
-            "Тебе важно донести до пользователя \"в чём суть текста?\", сохранив все важные детали."
+            "Текст был получен из аудио, поэтому некоторые слова могли исказиться, восстанавливай "
+            "их из контекста (если возможно) для повышения качества анализа текста. "
+            "Не показывай пользователю какие слова ты восстановил или исправил. Используй их только для анализа текста."
+            " Тебе важно донести до пользователя \"в чём суть текста?\", сохранив все важные детали."
         )
         if additional_context:
             system_prompt += "\nДополнительный контекст: " + additional_context
@@ -305,7 +299,7 @@ class TelegramBot:
         history = self.chat_history.get(chat_id, [])
         clarification_prompt = "Пользователь уточняет: " + question
         selected_model = self.selected_model.get(chat_id, APIClient.DEFAULT_MODEL)
-        await context.bot.send_message(chat_id, f"Отправляю уточняющий запрос в модель...")
+        await context.bot.send_message(chat_id, "Отправляю уточняющий запрос в модель...")
         reasoning, content = self.api_client.summarize_text(
             clarification_prompt,
             system_prompt="Учти историю диалога и ответь на уточняющий вопрос.",
@@ -359,8 +353,8 @@ class TelegramBot:
         else:
             self.chat_history[chat_id] = []
             response = "Режим диалога включён. Теперь вы можете задавать уточняющие вопросы."
-        reply_markup = ReplyKeyboardMarkup(self.get_main_keyboard(chat_id), resize_keyboard=True,
-                                           one_time_keyboard=False)
+        reply_markup = ReplyKeyboardMarkup(self.get_main_keyboard(chat_id),
+                                           resize_keyboard=True, one_time_keyboard=False)
         await update.message.reply_text(response, reply_markup=reply_markup)
 
     def setup_handlers(self):
@@ -368,9 +362,9 @@ class TelegramBot:
         self.app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, self.handle_voice_audio))
         self.app.add_handler(CallbackQueryHandler(self.context_button_handler))
         # Обработчики для меню регистрируются первыми
-        self.app.add_handler(
-            MessageHandler(filters.Regex(r"^(DeepSeek R1|Gemini Pro 2\.0|Qwen: QwQ 32B|⚡️ DeepSeek V3 685B|Отмена)$"),
-                           self.model_selection_handler))
+        self.app.add_handler(MessageHandler(
+            filters.Regex(r"^(DeepSeek R1|Gemini Pro 2\.0|Qwen: QwQ 32B|⚡ DeepSeek V3 685B|Отмена)$"),
+            self.model_selection_handler))
         self.app.add_handler(MessageHandler(filters.Regex(r"^(Режим диалога|Отключить контекст)$"), self.set_mode))
         self.app.add_handler(MessageHandler(filters.Regex(r"^Выбрать модель$"), self.choose_model))
         # Общий текстовый обработчик – для уточнения контекста или вопросов в диалоговом режиме
