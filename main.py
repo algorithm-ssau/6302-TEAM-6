@@ -73,7 +73,7 @@ class APIClient:
         messages = [{"role": "system", "content": system_prompt}]
         if history:
             messages.extend(history)
-        messages.append({"role": "user", "content": transcript})
+        messages.append({"role": "user", "content": "Распознанный текст из аудио пользователя: " + transcript})
         payload = {
             "model": model,
             "messages": messages
