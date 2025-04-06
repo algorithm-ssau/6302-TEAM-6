@@ -347,7 +347,7 @@ class TelegramBot:
         elif user_text == "⚡ DeepSeek V3 685B":
             self.selected_model[chat_id] = "deepseek/deepseek-chat-v3-0324:free"
         reply_markup = ReplyKeyboardMarkup(self.get_main_keyboard(chat_id), resize_keyboard=True, one_time_keyboard=False)
-        await update.message.reply_text(f"Выбрана модель {user_text.split(':')[0]}", reply_markup=reply_markup)
+        await update.message.reply_text(f"Выбрана модель {user_text}", reply_markup=reply_markup)
 
     async def set_mode(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Переключение режима диалога."""
