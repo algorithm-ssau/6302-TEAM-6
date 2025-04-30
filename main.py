@@ -42,14 +42,14 @@ async def transcribe_audio(file_path, context, chat_id):
         if transcript.status == "error":
             await context.bot.send_message(
                 chat_id,
-                "К сожалению, ключ API для транскрипции аудио истёк. "
-                "Не переживайте, мы уже занимаемся его заменой. Попробуйте сделать запрос позже."
+                "Истёк ключ API для транскрипции аудио"
+                "Попробуйте сделать запрос позже. Мы уже занимаемся этой проблемой"
             )
             return None
         text = transcript.text.strip()
     except Exception as e:
-        await context.bot.send_message(chat_id, f"К сожалению, произошла неизвестная ошибка при транскрипции аудио. "
-                                                f"Пожалуйста, попробуйте ещё раз.")
+        await context.bot.send_message(chat_id, f"Неизвестная ошибка при транскрипции аудио. "
+                                                f"Попробуйте ещё раз.")
         return None
     return text
 
@@ -188,11 +188,11 @@ class TelegramBot:
         except Exception as e:
             if "File is too big" in str(e):
                 await update.message.reply_text(
-                    "Telegram накладывает ограничение на размер файла. Пожалуйста, отправьте файл до 20 МБ."
+                    "Слишком большой размер файла. Пожалуйста, отправьте файл до 20 МБ."
                 )
                 return
             else:
-                await update.message.reply_text("Ошибка при получении файла. Пожалуйста, попробуйте ещё раз")
+                await update.message.reply_text("Ошибка получения файла. Попробуйте ещё раз")
                 return
 
         suffix = ".ogg" if file_type == "voice" else ".mp3"
@@ -255,7 +255,7 @@ class TelegramBot:
         try:
             transcript = await transcribe_audio(file_path, context, chat_id)
         except Exception as e:
-            await context.bot.send_message(chat_id, "Произошла ошибка при обработке аудиофайла. Попробуйте позже.")
+            await context.bot.send_message(chat_id, "Ошибка обработки аудиофайла. Попробуйте позже.")
             return
         finally:
             if os.path.exists(file_path):
