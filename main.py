@@ -346,6 +346,8 @@ class TelegramBot:
             self.selected_model[chat_id] = "qwen/qwq-32b:free"
         elif user_text == "⚡ DeepSeek V3 685B":
             self.selected_model[chat_id] = "deepseek/deepseek-chat-v3-0324:free"
+        elif user_text == "Llama 4 Maverick":
+            self.selected_model[chat_id] = "meta-llama/llama-4-maverick:free"
         reply_markup = ReplyKeyboardMarkup(self.get_main_keyboard(chat_id), resize_keyboard=True, one_time_keyboard=False)
         await update.message.reply_text(f"Выбрана модель {user_text}", reply_markup=reply_markup)
 
