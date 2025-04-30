@@ -375,7 +375,7 @@ class TelegramBot:
         self.app.add_handler(CallbackQueryHandler(self.context_button_handler))
         # Обработчики для меню регистрируются первыми
         self.app.add_handler(MessageHandler(
-            filters.Regex(r"^(DeepSeek R1|Gemini 2\.5 Pro|Qwen3 235B|⚡ DeepSeek V3 685B|Llama 4 Maverick|Отмена)$"),
+            filters.Regex(r"^(DeepSeek R1|Gemini 2\.5 Pro|Qwen3 235B|⚡️ DeepSeek V3 685B|Llama 4 Maverick|Gemma 3 27B|Отмена)$"),
             self.model_selection_handler))
         self.app.add_handler(MessageHandler(filters.Regex(r"^(Режим диалога|Отключить контекст)$"), self.set_mode))
         self.app.add_handler(MessageHandler(filters.Regex(r"^Выбрать модель$"), self.choose_model))
