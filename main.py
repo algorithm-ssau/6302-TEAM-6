@@ -17,14 +17,12 @@ from telegram.ext import (
     filters,
 )
 
-# Загрузка переменных окружения
 load_dotenv()
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 ASSEMBLYAI_API_KEY = os.getenv("ASSEMBLYAI_API_KEY")
 aai.settings.api_key = ASSEMBLYAI_API_KEY
 
-# Константы
 API_RETRY_ATTEMPTS = 10
 MESSAGE_LIMIT = 4096
 
@@ -128,16 +126,12 @@ class TelegramBot:
         self.api_client = APIClient()
         self.app = Application.builder().token(self.token).build()
 
-        # pending_audio хранит путь к аудиофайлу для каждого чата
         self.pending_audio = {}
-        # awaiting_context: если бот ожидает ввод уточняющего контекста для аудио.
-        # Если значение True – ждем текст от пользователя.
         self.awaiting_context = {}
 
-        # Состояния для выбора модели и режима диалога
-        self.selected_model = {}  # {chat_id: model_name}
-        self.use_context = {}     # {chat_id: bool}
-        self.chat_history = {}    # {chat_id: список сообщений}
+        self.selected_model = {}
+        self.use_context = {}
+        self.chat_history = {}
 
         self.setup_handlers()
 
@@ -175,7 +169,6 @@ class TelegramBot:
         """Обработка голосовых сообщений и аудиофайлов."""
         chat_id = update.effective_chat.id
 
-        # Определяем тип файла
         file_id = None
         file_type = None
         if update.message.voice:
@@ -188,7 +181,6 @@ class TelegramBot:
             await update.message.reply_text("Неподдерживаемый формат файла. Я принимаю голосовые сообщения, ogg и mp3")
             return
 
-        # Скачиваем файл во временное хранилище
         try:
             await context.bot.send_message(chat_id, "Скачиваю файл...")
             new_file = await context.bot.get_file(file_id)
@@ -207,10 +199,8 @@ class TelegramBot:
             file_path = tf.name
             await new_file.download_to_drive(file_path)
 
-        # Используем оригинальный аудиофайл без конвертации
         self.pending_audio[chat_id] = file_path
 
-        # Спрашиваем, нужен ли уточняющий контекст
         buttons = [
             [InlineKeyboardButton("Уточнить", callback_data="ask_context_yes"),
              InlineKeyboardButton("Не нужно", callback_data="ask_context_no")]
@@ -227,12 +217,12 @@ class TelegramBot:
         chat_id = query.message.chat_id
         await query.answer()
         if query.data == "ask_context_yes":
-            self.awaiting_context[chat_id] = True  # ждём ввода контекста
+            self.awaiting_context[chat_id] = True
             await query.edit_message_text("Пожалуйста, введите уточняющий контекст."
                                           "\nНапример, "
                                           "\"Это требования заказчика к новому проекту о бронировании авиабилетов\".")
         elif query.data == "ask_context_no":
-            self.awaiting_context[chat_id] = False  # контекст не нужен
+            self.awaiting_context[chat_id] = False
             await query.edit_message_text("Транскрибирую аудио...")
             await self.process_summarization(chat_id, additional_context=None, context=context)
 
@@ -241,13 +231,12 @@ class TelegramBot:
         chat_id = update.effective_chat.id
         text = update.message.text.strip()
 
-        # Если ожидается ввод уточняющего контекста для аудио
         if chat_id in self.awaiting_context and self.awaiting_context[chat_id] is True:
             additional_context = text
-            self.awaiting_context[chat_id] = additional_context  # сохраняем введённый контекст
+            self.awaiting_context[chat_id] = additional_context
             await update.message.reply_text("Транскрибирую аудио...")
             await self.process_summarization(chat_id, additional_context=additional_context, context=context)
-        # Если включён режим диалога – трактуем сообщение как уточняющий вопрос
+
         elif self.use_context.get(chat_id, False):
             await self.process_clarification(chat_id, question=text, context=context)
         else:
@@ -373,13 +362,13 @@ class TelegramBot:
         self.app.add_handler(CommandHandler("start", self.start))
         self.app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, self.handle_voice_audio))
         self.app.add_handler(CallbackQueryHandler(self.context_button_handler))
-        # Обработчики для меню регистрируются первыми
+
         self.app.add_handler(MessageHandler(
             filters.Regex(r"^(DeepSeek R1|Gemini 2\.5 Pro|Qwen3 235B|⚡️ DeepSeek V3 685B|Llama 4 Maverick|Gemma 3 27B|Отмена)$"),
             self.model_selection_handler))
         self.app.add_handler(MessageHandler(filters.Regex(r"^(Режим диалога|Отключить контекст)$"), self.set_mode))
         self.app.add_handler(MessageHandler(filters.Regex(r"^Выбрать модель$"), self.choose_model))
-        # Общий текстовый обработчик – для уточнения контекста или вопросов в диалоговом режиме
+
         self.app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.handle_text))
 
     def run(self):
