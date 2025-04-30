@@ -330,6 +330,7 @@ class TelegramBot:
         keyboard = [
             [KeyboardButton("⚡ DeepSeek V3 685B"), KeyboardButton("DeepSeek R1")],
             [KeyboardButton("Gemini 2.5 Pro"), KeyboardButton("Qwen: QwQ 32B")],
+            [KeyboardButton("Llama 4 Maverick")],
         ]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
         await update.message.reply_text("Выберите модель:", reply_markup=reply_markup)
