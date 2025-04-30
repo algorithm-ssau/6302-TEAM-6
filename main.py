@@ -343,8 +343,8 @@ class TelegramBot:
             self.selected_model[chat_id] = "deepseek/deepseek-r1:free"
         elif user_text == "Gemini 2.5 Pro":
             self.selected_model[chat_id] = "google/gemini-2.5-pro-exp-03-25:free"
-        elif user_text == "Qwen: QwQ 32B":
-            self.selected_model[chat_id] = "qwen/qwq-32b:free"
+        elif user_text == "Qwen3 235B":
+            self.selected_model[chat_id] = "qwen/qwen3-235b-a22b:free"
         elif user_text == "⚡ DeepSeek V3 685B":
             self.selected_model[chat_id] = "deepseek/deepseek-chat-v3-0324:free"
         elif user_text == "Llama 4 Maverick":
