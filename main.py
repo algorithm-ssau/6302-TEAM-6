@@ -81,7 +81,8 @@ class APIClient:
         attempts = 0
         while attempts < API_RETRY_ATTEMPTS:
             attempts += 1
-            logging.info("summarize_text(): обращение к API модели %s | попытка %d/%d", model, attempts, API_RETRY_ATTEMPTS)
+            logging.info("summarize_text(): обращение к API модели %s | попытка %d/%d",
+                         model, attempts, API_RETRY_ATTEMPTS)
             try:
                 response = requests.post(
                     url=self.API_URL,
@@ -282,9 +283,11 @@ class TelegramBot:
             system_prompt += "\nДополнительный контекст: " + additional_context
 
         history = self.chat_history.get(chat_id) if self.use_context.get(chat_id, False) else None
-        reasoning, content = self.api_client.summarize_text(transcript, system_prompt, model=selected_model, history=history)
+        reasoning, content = self.api_client.summarize_text(transcript, system_prompt,
+                                                            model=selected_model, history=history)
         if not content or content == "Server is busy right now":
-            await context.bot.send_message(chat_id, "К сожалению, сервер языковой модели плохо себя ведёт. Попробуйте позже.")
+            await context.bot.send_message(chat_id,
+                                           "К сожалению, сервер языковой модели плохо себя ведёт. Попробуйте позже.")
         else:
             if self.use_context.get(chat_id, False):
                 if chat_id not in self.chat_history:
@@ -307,7 +310,8 @@ class TelegramBot:
             history=history
         )
         if not content or content == "Server is busy right now":
-            await context.bot.send_message(chat_id, "К сожалению, сервер языковой модели плохо себя ведёт. Попробуйте позже.")
+            await context.bot.send_message(chat_id,
+                                           "К сожалению, сервер языковой модели плохо себя ведёт. Попробуйте позже.")
         else:
             self.chat_history[chat_id].append({"role": "user", "content": clarification_prompt})
             self.chat_history[chat_id].append({"role": "assistant", "content": content})
@@ -340,7 +344,8 @@ class TelegramBot:
             self.selected_model[chat_id] = "meta-llama/llama-4-maverick:free"
         elif user_text == "Gemma 3 27B":
             self.selected_model[chat_id] = "google/gemma-3-27b-it:free"
-        reply_markup = ReplyKeyboardMarkup(self.get_main_keyboard(chat_id), resize_keyboard=True, one_time_keyboard=False)
+        reply_markup = ReplyKeyboardMarkup(self.get_main_keyboard(chat_id),
+                                           resize_keyboard=True, one_time_keyboard=False)
         await update.message.reply_text(f"Выбрана модель {user_text}", reply_markup=reply_markup)
 
     async def set_mode(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -364,7 +369,8 @@ class TelegramBot:
         self.app.add_handler(CallbackQueryHandler(self.context_button_handler))
 
         self.app.add_handler(MessageHandler(
-            filters.Regex(r"^(DeepSeek R1|Gemini 2\.5 Pro|Qwen3 235B|⚡️ DeepSeek V3 685B|Llama 4 Maverick|Gemma 3 27B|Отмена)$"),
+            filters.Regex(r"^(DeepSeek R1|Gemini 2\.5 Pro|Qwen3 235B|⚡️ "
+                          r"DeepSeek V3 685B|Llama 4 Maverick|Gemma 3 27B|Отмена)$"),
             self.model_selection_handler))
         self.app.add_handler(MessageHandler(filters.Regex(r"^(Режим диалога|Отключить контекст)$"), self.set_mode))
         self.app.add_handler(MessageHandler(filters.Regex(r"^Выбрать модель$"), self.choose_model))
