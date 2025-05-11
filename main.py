@@ -103,7 +103,8 @@ class APIClient:
 
             data = response.json()
             if "error" in data:
-                logging.error("summarize_text(): API вернул ошибку: %s", data["error"])
+                logging.error("summarize_text(): API вернул ошибку: %s | Запрос был отправлен для модели: %s",
+                              data["error"], model)
                 continue
 
             message = data["choices"][0]["message"]
