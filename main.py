@@ -23,7 +23,7 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 ASSEMBLYAI_API_KEY = os.getenv("ASSEMBLYAI_API_KEY")
 aai.settings.api_key = ASSEMBLYAI_API_KEY
 
-API_RETRY_ATTEMPTS = 10
+API_RETRY_ATTEMPTS = 15
 MESSAGE_LIMIT = 4096
 
 def split_message(text, limit=MESSAGE_LIMIT):
@@ -42,13 +42,13 @@ async def transcribe_audio(file_path, context, chat_id):
         if transcript.status == "error":
             await context.bot.send_message(
                 chat_id,
-                "Истёк ключ API для транскрипции аудио"
-                "Попробуйте сделать запрос позже. Мы уже занимаемся этой проблемой"
+                "Истёк ключ API для транскрипции аудио."
+                "Попробуйте сделать запрос позже. Мы уже занимаемся этой проблемой."
             )
             return None
         text = transcript.text.strip()
     except Exception as e:
-        await context.bot.send_message(chat_id, f"Неизвестная ошибка при транскрипции аудио. "
+        await context.bot.send_message(chat_id, f"Неизвестная ошибка при транскрипции аудио:  {str(e)}."
                                                 f"Попробуйте ещё раз.")
         return None
     return text
@@ -97,13 +97,15 @@ class APIClient:
                 try:
                     data = response.json()
                     logging.error("summarize_text(): API вернул ошибку: %s", data.get("error"))
-                except Exception:
-                    logging.error("summarize_text(): API вернул статус код %s", response.status_code)
+                except Exception as e:
+                    logging.error("summarize_text(): API вернул статус код %s, исключение: %s",
+                                  response.status_code, str(e))
                 continue
 
             data = response.json()
             if "error" in data:
-                logging.error("summarize_text(): API вернул ошибку: %s", data["error"])
+                logging.error("summarize_text(): API вернул ошибку: %s | Запрос был отправлен для модели: %s",
+                              data["error"], model)
                 continue
 
             message = data["choices"][0]["message"]
@@ -179,7 +181,7 @@ class TelegramBot:
             file_id = update.message.audio.file_id
             file_type = "audio"
         else:
-            await update.message.reply_text("Неподдерживаемый формат файла. Я принимаю голосовые сообщения, ogg и mp3")
+            await update.message.reply_text("Неподдерживаемый формат файла. Я принимаю голосовые сообщения, ogg и mp3.")
             return
 
         try:
@@ -192,7 +194,7 @@ class TelegramBot:
                 )
                 return
             else:
-                await update.message.reply_text("Ошибка получения файла. Попробуйте ещё раз")
+                await update.message.reply_text("Ошибка получения файла. Попробуйте ещё раз.")
                 return
 
         suffix = ".ogg" if file_type == "voice" else ".mp3"
