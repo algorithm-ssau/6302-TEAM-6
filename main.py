@@ -97,8 +97,9 @@ class APIClient:
                 try:
                     data = response.json()
                     logging.error("summarize_text(): API вернул ошибку: %s", data.get("error"))
-                except Exception:
-                    logging.error("summarize_text(): API вернул статус код %s", response.status_code)
+                except Exception as e:
+                    logging.error("summarize_text(): API вернул статус код %s, исключение: %s",
+                                  response.status_code, str(e))
                 continue
 
             data = response.json()
