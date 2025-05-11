@@ -48,7 +48,7 @@ async def transcribe_audio(file_path, context, chat_id):
             return None
         text = transcript.text.strip()
     except Exception as e:
-        await context.bot.send_message(chat_id, f"Неизвестная ошибка при транскрипции аудио. "
+        await context.bot.send_message(chat_id, f"Неизвестная ошибка при транскрипции аудио:  {str(e)}."
                                                 f"Попробуйте ещё раз.")
         return None
     return text
