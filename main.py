@@ -42,8 +42,8 @@ async def transcribe_audio(file_path, context, chat_id):
         if transcript.status == "error":
             await context.bot.send_message(
                 chat_id,
-                "Истёк ключ API для транскрипции аудио"
-                "Попробуйте сделать запрос позже. Мы уже занимаемся этой проблемой"
+                "Истёк ключ API для транскрипции аудио."
+                "Попробуйте сделать запрос позже. Мы уже занимаемся этой проблемой."
             )
             return None
         text = transcript.text.strip()
@@ -181,7 +181,7 @@ class TelegramBot:
             file_id = update.message.audio.file_id
             file_type = "audio"
         else:
-            await update.message.reply_text("Неподдерживаемый формат файла. Я принимаю голосовые сообщения, ogg и mp3")
+            await update.message.reply_text("Неподдерживаемый формат файла. Я принимаю голосовые сообщения, ogg и mp3.")
             return
 
         try:
@@ -194,7 +194,7 @@ class TelegramBot:
                 )
                 return
             else:
-                await update.message.reply_text("Ошибка получения файла. Попробуйте ещё раз")
+                await update.message.reply_text("Ошибка получения файла. Попробуйте ещё раз.")
                 return
 
         suffix = ".ogg" if file_type == "voice" else ".mp3"
