@@ -226,7 +226,7 @@ class TelegramBot:
                                           "\"Это требования заказчика к новому проекту о бронировании авиабилетов\".")
         elif query.data == "ask_context_no":
             self.awaiting_context[chat_id] = False
-            await query.edit_message_text("Транскрибирую аудио...")
+            await query.edit_message_text("🎧 Транскрибирую аудио...")
             await self.process_summarization(chat_id, additional_context=None, context=context)
 
     async def handle_text(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
