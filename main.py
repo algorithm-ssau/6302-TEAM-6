@@ -1,11 +1,16 @@
+# Стандартные библиотеки
 import os
 import re
 import json
 import logging
 import tempfile
+
+# Сторонние библиотеки
 import requests
 import assemblyai as aai
 from dotenv import load_dotenv
+
+# Телеграм API
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.ext import (
