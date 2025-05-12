@@ -185,7 +185,12 @@ class TelegramBot:
             return
 
         try:
-            await context.bot.send_message(chat_id, "Скачиваю файл...")
+            file_size_mb = 0
+            if update.message.voice:
+                file_size_mb = update.message.voice.file_size / (1024 * 1024)
+            elif update.message.audio:
+                file_size_mb = update.message.audio.file_size / (1024 * 1024)
+            await context.bot.send_message(chat_id, f"Скачиваю файл... Размер: {file_size_mb:.2f} МБ")
             new_file = await context.bot.get_file(file_id)
         except Exception as e:
             if "File is too big" in str(e):
