@@ -215,7 +215,7 @@ class TelegramBot:
         else:
             suffix = ".mp3"
 
-        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tf:
+        with tempfile.NamedTemporaryFile(suffix=suffix, prefix="tg_audio_", delete=False) as tf:
             file_path = tf.name
             await new_file.download_to_drive(file_path)
 
