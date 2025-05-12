@@ -1,11 +1,16 @@
+# Стандартные библиотеки
 import os
 import re
 import json
 import logging
 import tempfile
+
+# Сторонние библиотеки
 import requests
 import assemblyai as aai
 from dotenv import load_dotenv
+
+# Телеграм API
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.ext import (
@@ -42,8 +47,9 @@ async def transcribe_audio(file_path, context, chat_id):
         if transcript.status == "error":
             await context.bot.send_message(
                 chat_id,
-                "Истёк ключ API для транскрипции аудио."
-                "Попробуйте сделать запрос позже. Мы уже занимаемся этой проблемой."
+                "К сожалению, ключ API для транскрипции аудио истек.\n"
+                "Не переживайте, мы уже занимаемся его заменой. \n"
+                "Попробуйте сделать запрос позже."
             )
             return None
         text = transcript.text.strip()
@@ -209,7 +215,7 @@ class TelegramBot:
         else:
             suffix = ".mp3"
 
-        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tf:
+        with tempfile.NamedTemporaryFile(suffix=suffix, prefix="tg_audio_", delete=False) as tf:
             file_path = tf.name
             await new_file.download_to_drive(file_path)
 
