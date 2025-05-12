@@ -144,7 +144,7 @@ class TelegramBot:
         """
         context_button = "Отключить контекст" if self.use_context.get(chat_id, False) else "Режим диалога"
         keyboard = [
-            [KeyboardButton("Выбрать модель")],
+            [KeyboardButton("⚙️ Выбрать модель")],
             [KeyboardButton(context_button)],
             [KeyboardButton("/start")]
         ]
