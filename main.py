@@ -47,8 +47,9 @@ async def transcribe_audio(file_path, context, chat_id):
         if transcript.status == "error":
             await context.bot.send_message(
                 chat_id,
-                "Истёк ключ API для транскрипции аудио."
-                "Попробуйте сделать запрос позже. Мы уже занимаемся этой проблемой."
+                "К сожалению, ключ API для транскрипции аудио истек.\n"
+                "Не переживайте, мы уже занимаемся его заменой. \n"
+                "Попробуйте сделать запрос позже."
             )
             return None
         text = transcript.text.strip()
