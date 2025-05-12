@@ -357,7 +357,7 @@ class TelegramBot:
         self.use_context[chat_id] = not current
         if not self.use_context[chat_id]:
             self.chat_history.pop(chat_id, None)
-            response = "Режим диалога отключён. История очищена."
+            response = "Режим диалога отключён. ❌ История очищена."
         else:
             self.chat_history[chat_id] = []
             response = "Режим диалога включён. ✅ Теперь вы можете задавать уточняющие вопросы."
