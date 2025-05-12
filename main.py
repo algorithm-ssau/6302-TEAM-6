@@ -181,7 +181,7 @@ class TelegramBot:
             file_id = update.message.audio.file_id
             file_type = "audio"
         else:
-            await update.message.reply_text("Неподдерживаемый формат файла. Я принимаю голосовые сообщения, ogg и mp3.")
+            await update.message.reply_text("Неподдерживаемый формат файла. Я принимаю голосовые сообщения, ogg, wav и mp3")
             return
 
         try:
