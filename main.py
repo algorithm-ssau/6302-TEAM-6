@@ -360,7 +360,7 @@ class TelegramBot:
             response = "Режим диалога отключён. История очищена."
         else:
             self.chat_history[chat_id] = []
-            response = "Режим диалога включён. Теперь вы можете задавать уточняющие вопросы."
+            response = "Режим диалога включён. ✅ Теперь вы можете задавать уточняющие вопросы."
         reply_markup = ReplyKeyboardMarkup(self.get_main_keyboard(chat_id),
                                            resize_keyboard=True, one_time_keyboard=False)
         await update.message.reply_text(response, reply_markup=reply_markup)
