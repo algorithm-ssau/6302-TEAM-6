@@ -196,8 +196,14 @@ class TelegramBot:
             else:
                 await update.message.reply_text("Ошибка получения файла. Попробуйте ещё раз.")
                 return
+            
+        if file_type == "voice":
+            suffix = ".ogg"
+        elif update.message.audio and update.message.audio.mime_type == "audio/wav":
+            suffix = ".wav"
+        else:
+            suffix = ".mp3"
 
-        suffix = ".ogg" if file_type == "voice" else ".mp3"
         with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tf:
             file_path = tf.name
             await new_file.download_to_drive(file_path)
