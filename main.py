@@ -144,7 +144,7 @@ class TelegramBot:
         """
         context_button = "Отключить контекст" if self.use_context.get(chat_id, False) else "Режим диалога"
         keyboard = [
-            [KeyboardButton("Выбрать модель")],
+            [KeyboardButton("⚙️ Выбрать модель")],
             [KeyboardButton(context_button)],
             [KeyboardButton("/start")]
         ]
@@ -163,8 +163,8 @@ class TelegramBot:
             resize_keyboard=True, one_time_keyboard=False
         )
         await update.message.reply_text(
-            "Привет! Отправь голосовое сообщение или аудиофайл, и я переведу его в структурированный текст.\n"
-            "После загрузки аудио можно ввести уточняющий контекст, чтобы достичь лучшего результата.",
+            "👋 Привет! Отправь голосовое сообщение или аудиофайл, и я переведу его в структурированный текст.\n"
+            "🎯 После загрузки аудио можно ввести уточняющий контекст, чтобы достичь лучшего результата.",
             reply_markup=reply_markup
         )
 
@@ -226,7 +226,7 @@ class TelegramBot:
                                           "\"Это требования заказчика к новому проекту о бронировании авиабилетов\".")
         elif query.data == "ask_context_no":
             self.awaiting_context[chat_id] = False
-            await query.edit_message_text("Транскрибирую аудио...")
+            await query.edit_message_text("🎧 Транскрибирую аудио...")
             await self.process_summarization(chat_id, additional_context=None, context=context)
 
     async def handle_text(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
