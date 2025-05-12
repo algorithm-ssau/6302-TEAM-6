@@ -221,7 +221,7 @@ class TelegramBot:
         await query.answer()
         if query.data == "ask_context_yes":
             self.awaiting_context[chat_id] = True
-            await query.edit_message_text("Пожалуйста, введите уточняющий контекст."
+            await query.edit_message_text("💬 Пожалуйста, введите уточняющий контекст."
                                           "\nНапример, "
                                           "\"Это требования заказчика к новому проекту о бронировании авиабилетов\".")
         elif query.data == "ask_context_no":
@@ -357,10 +357,10 @@ class TelegramBot:
         self.use_context[chat_id] = not current
         if not self.use_context[chat_id]:
             self.chat_history.pop(chat_id, None)
-            response = "Режим диалога отключён. История очищена."
+            response = "Режим диалога отключён. ❌ История очищена."
         else:
             self.chat_history[chat_id] = []
-            response = "Режим диалога включён. Теперь вы можете задавать уточняющие вопросы."
+            response = "Режим диалога включён. ✅ Теперь вы можете задавать уточняющие вопросы."
         reply_markup = ReplyKeyboardMarkup(self.get_main_keyboard(chat_id),
                                            resize_keyboard=True, one_time_keyboard=False)
         await update.message.reply_text(response, reply_markup=reply_markup)
