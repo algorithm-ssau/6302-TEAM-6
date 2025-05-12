@@ -221,7 +221,7 @@ class TelegramBot:
         await query.answer()
         if query.data == "ask_context_yes":
             self.awaiting_context[chat_id] = True
-            await query.edit_message_text("Пожалуйста, введите уточняющий контекст."
+            await query.edit_message_text("💬 Пожалуйста, введите уточняющий контекст."
                                           "\nНапример, "
                                           "\"Это требования заказчика к новому проекту о бронировании авиабилетов\".")
         elif query.data == "ask_context_no":
